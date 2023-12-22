@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Subir imagen</title>
+</head>
+<body>
+  <h1>Subir imagen</h1>
+  <form id="imageUploadForm">
+    <input type="file" name="image" id="imageInput">
+    <input type="text" name="perfil" id="perfil">
+    <button type="submit">Subir imagen</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('imageUploadForm');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      
+      const imageInput = document.getElementById('imageInput');
+      const file = imageInput.files[0];
+      const perfil=document.getElementById("perfil").value;
+      
+      const formData = new FormData();
+      formData.append('tipo_archivo', 1);
+      formData.append('id_perfil',perfil);
+      formData.append('perfil', "angel");
+      formData.append('archivo', file);      
+      try {
+        const response = await fetch('http://localhost:3002/archivos', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        console.log(data);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+*{
+    margin: 0px;
+    padding: 0px;
+}
+
+#root{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    font-family: 'Lato', sans-serif;
+}
+aside{
+    width: 100px;
+    background-color: #fff;
+}
+aside a{
+    text-decoration: none;
+}
+#contenido{
+    flex: 1;
+    background-color: aliceblue;
+    height: 100vh;
+}
+#contenido main, #contenido header{
+    padding: 30px;
+}

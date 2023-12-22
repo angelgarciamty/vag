@@ -1,0 +1,8 @@
+
+  .modal-container{
+    opacity: 0;
+    transition: opacity 0.15s ease-in;
+  }
+  .modal-container.open{
+    opacity: 1;
+  }

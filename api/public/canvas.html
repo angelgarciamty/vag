@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Imagen en Canvas</title>
+</head>
+<body>
+    <canvas id="canvas" style="border: 1px solid #000;"></canvas>
+    <canvas id="output-canvas" width="200" height="200 " style="border: 1px solid #000;"></canvas>
+    <button id="send-image">send image</button>
+    <script>
+        var squareX = 50;
+        var squareY = 50;
+        var squareWidth = 200;
+        var squareHeight = 200;
+        const tamanio=700;
+        var isDragging = false;
+        var isScaling = false;
+        var offsetX, offsetY;
+        var imgWidth;
+        var imgHeight;
+        var img;
+
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var button= document.getElementById("send-image");
+
+        button.addEventListener("click",function(){
+            getImg();
+        })
+
+        function drawSquare() {
+            
+            ctx.strokeStyle = "red"; // Color del borde del cuadrado
+            ctx.lineWidth = 3; // Ancho del borde del cuadrado
+            ctx.strokeRect(squareX, squareY, squareWidth, squareHeight);
+            ctx.fillStyle="red";
+            ctx.fillRect((squareX+squareWidth)-10,(squareY+squareHeight)-10,20,20);
+        }
+
+        function isMouseOverSquare(x, y) {
+            return x >= squareX && x <= squareX + squareWidth && y >= squareY && y <= squareY + squareHeight;
+        }
+
+        function isMouseOverScaleBox(x,y){
+            return x >= (squareX+squareWidth)-10 && x<=(squareX+squareWidth)+10 && y >= (squareY+squareHeight)-10 && y <= (squareY+squareHeight)+10;
+        }
+
+        canvas.addEventListener("mousedown", function(event) {
+            var mouseX = event.clientX - canvas.getBoundingClientRect().left;
+            var mouseY = event.clientY - canvas.getBoundingClientRect().top;
+
+            if (isMouseOverSquare(mouseX, mouseY)) {
+                isDragging = true;
+                offsetX = mouseX - squareX;
+                offsetY = mouseY - squareY;
+            }
+            if(isMouseOverScaleBox(mouseX,mouseY)){
+                isScaling = true;
+            }
+        });
+
+        // Evento al soltar el clic del mouse
+        canvas.addEventListener("mouseup", function(event) {
+            isDragging = false;
+            isScaling = false;
+        });
+
+        // Evento al mover el mouse
+        canvas.addEventListener("mousemove", function(event) {
+            var mouseX = event.clientX - canvas.getBoundingClientRect().left;
+            var mouseY = event.clientY - canvas.getBoundingClientRect().top;
+            /**/
+            if(isScaling){
+                drawImg();
+                //mouseX=mouseX >= 190 && mouseX <= 210 ? 200:mouseX;
+                var valor=mouseX-squareX;
+                if(valor+squareX <= canvas.width && valor+squareY <= canvas.height ){
+                    squareWidth=valor;
+                    squareHeight=valor;
+                    drawSquare();
+                }else{
+                    drawSquare();
+                }
+            }else{
+                if (isDragging) {
+                    squareX = mouseX - offsetX;
+                    squareY = mouseY - offsetY;
+
+                    drawImg();
+                    if(squareX>=0 && squareX+squareWidth<=canvas.width && squareY>=0 && squareY+squareHeight<=canvas.height){
+                        drawSquare();
+                    }else{
+                        squareX=squareX<=0 ? 0 : squareX >= canvas.width-squareWidth ? canvas.width-squareWidth : squareX;
+                        squareY=squareY<=0 ? 0 : squareY >= canvas.height-squareHeight ? canvas.height-squareHeight : squareY;
+                        drawSquare();
+                    }
+                }
+            }
+        });
+
+        function getImg() {
+            drawImg();
+            var imageData = ctx.getImageData(squareX, squareY, squareWidth, squareHeight);
+            var canvas = document.createElement("canvas");
+            canvas.width = imageData.width;
+            canvas.height = imageData.height;
+            var ctxTemp = canvas.getContext("2d");
+            ctxTemp.putImageData(imageData, 0, 0);
+
+            canvas.toBlob(function (blob) {
+                // Crea un objeto File para enviar al servidor
+                var file = new File([blob], "imagen_recortada.png", { type: "image/png" });
+
+                // Crea una solicitud HTTP para enviar el archivo al servidor
+                var formData = new FormData();
+                formData.append('id_perfil', "64b87d771a7ebdc90e702522");
+                formData.append("imgPerfil", file);
+
+                // Reemplaza 'URL_DEL_SERVIDOR' con la URL del endpoint de tu servidor
+                fetch("http://localhost:3002/perfiles", {
+                    method: "PATCH",
+                    body: formData
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    // Aquí puedes manejar la respuesta del servidor
+                    console.log("exito");
+                    console.log("Respuesta del servidor:", data);
+                })
+                .catch((error) => {
+                    console.error("Error al enviar la imagen:", error);
+                });
+            }, "image/png");
+            }
+
+        function drawImg(){
+                const proporcion=img.width/img.height;
+                const escala=proporcion>1?tamanio/img.width:tamanio/img.height;
+                imgWidth=img.width*escala;
+                imgHeight=img.height*escala;
+                canvas.width=imgWidth;
+                canvas.height=imgHeight;
+                ctx.drawImage(img, 0, 0, imgWidth, imgHeight);    
+        }
+                
+        // Función para cargar la imagen y dibujarla en el canvas
+        function newImg(url) {
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Crear una nueva instancia de la imagen
+            img = new Image();
+
+            // Cuando la imagen se haya cargado, dibujarla en el canvas
+            img.onload = function() {
+                const proporcion=img.width/img.height;
+                const escala=proporcion>1?tamanio/img.width:tamanio/img.height;
+                imgWidth=img.width*escala;
+                imgHeight=img.height*escala;
+                canvas.width=imgWidth;
+                canvas.height=imgHeight;
+                ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
+                drawSquare();
+
+                var imageData = ctx.getImageData(50, 50, 200, 200);
+
+                // Crear un nuevo canvas para imprimir los píxeles del cuadrado
+                var outputCanvas = document.getElementById("output-canvas");
+                var outputCtx = outputCanvas.getContext("2d");
+
+                // Dibujar los píxeles del cuadrado en el nuevo canvas
+                outputCtx.putImageData(imageData, 0, 0);
+            };
+
+            // Especificar la URL de la imagen
+            img.src = url;
+            
+        }
+        var img1="imagen.jpg";
+        // URL de la imagen que deseas cargar en el canvas
+        var imageUrl = "https://d7lju56vlbdri.cloudfront.net/var/ezwebin_site/storage/images/_aliases/img_1col/noticias/cartografian-el-fondo-somero-de-la-costa-mediterranea-con-imagenes-de-satelite/10910240-2-esl-MX/Cartografian-el-fondo-somero-de-la-costa-mediterranea-con-imagenes-de-satelite.jpg"; // Reemplaza esto con la URL de la imagen que quieras mostrar
+
+        // Llamar a la función newImg() con la URL de la imagen
+        newImg(img1);
+    </script>
+</body>
+</html>
